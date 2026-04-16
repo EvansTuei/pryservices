@@ -33,9 +33,9 @@ def startup():
             if count == 0:
                 cur.execute("""
                     INSERT INTO users (name) VALUES
-                    ('Evans'),
-                    ('Alice'),
-                    ('Bob');
+                    ('rop'),
+                    ('kimmeto'),
+                    ('chumba');
                 """)
 
         conn.commit()
