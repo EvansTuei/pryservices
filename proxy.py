@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import psycopg2
+import psycopg
 import os
 
 app = FastAPI()
@@ -12,7 +12,7 @@ for var in required_env_vars:
 
 
 def get_connection():
-    return psycopg2.connect(
+    return psycopg.connect(
         host=os.environ.get("DB_HOST"),
         port=os.environ.get("DB_PORT", 5432),
         user=os.environ.get("DB_USER"),
@@ -28,22 +28,13 @@ def read_root():
 
 @app.get("/users")
 def get_users():
-    conn = get_connection()
-    cur = conn.cursor()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users;")
+            
+            columns = [desc.name for desc in cur.description]
+            rows = cur.fetchall()
 
-    cur.execute("SELECT * FROM users;")
-
-    # Get column names
-    columns = [desc[0] for desc in cur.description]
-
-    # Fetch data
-    rows = cur.fetchall()
-
-    # Convert to list of dictionaries (JSON-friendly)
-    result = [dict(zip(columns, row)) for row in rows]
-
-    # Clean up
-    cur.close()
-    conn.close()
+            result = [dict(zip(columns, row)) for row in rows]
 
     return {"data": result}
