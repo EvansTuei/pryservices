@@ -1,43 +1,24 @@
-import asyncio
-import websockets
+from fastapi import FastAPI
+import psycopg2
 import os
 
-DB_HOST = 'dpg-d7g9tb0sfn5c73a1354g-a.oregon-postgres.render.com'
-DB_PORT = 5432
+app = FastAPI()
 
-async def handle(websocket):
-    try:
-        reader, writer = await asyncio.open_connection(DB_HOST, DB_PORT)
-        
-        async def ws_to_db():
-            try:
-                async for message in websocket:
-                    writer.write(message if isinstance(message, bytes) else message.encode())
-                    await writer.drain()
-            except:
-                pass
-            finally:
-                writer.close()
+conn = psycopg2.connect(
+    host=os.environ.get("DB_HOST"),
+    port=os.environ.get("DB_PORT", 5432),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    dbname=os.environ.get("DB_NAME")
+)
 
-        async def db_to_ws():
-            try:
-                while True:
-                    data = await reader.read(4096)
-                    if not data:
-                        break
-                    await websocket.send(data)
-            except:
-                pass
+@app.get("/")
+def read_root():
+    return {"status": "ok"}
 
-        await asyncio.gather(ws_to_db(), db_to_ws())
-    except Exception as e:
-        print(f"Error: {e}")
-
-async def main():
-    port = int(os.environ.get('PORT', 3000))
-    print(f'WebSocket proxy starting on port {port}')
-    async with websockets.serve(handle, '0.0.0.0', port):
-        await asyncio.Future()
-
-if __name__ == '__main__':
-    asyncio.run(main())
+@app.get("/users")
+def get_users():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users;")
+    rows = cur.fetchall()
+    return {"data": rows}
