@@ -38,3 +38,13 @@ def get_users():
             result = [dict(zip(columns, row)) for row in rows]
 
     return {"data": result}
+
+@app.get("/test-db")
+def test_db():
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+                return {"result": cur.fetchone()}
+    except Exception as e:
+        return {"error": str(e)}
